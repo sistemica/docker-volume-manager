@@ -1,0 +1,58 @@
+{
+  "description": "Sistemica Docker Volume Manager CSI Plugin",
+  "documentation": "https://github.com/sistemica/docker-volume-manager",
+  "interface": {
+    "types": ["docker.volumedriver/1.0"],
+    "socket": "csi.sock"
+  },
+  "entrypoint": ["/csi-plugin"],
+  "workdir": "/",
+  "network": {
+    "type": "host"
+  },
+  "mounts": [
+    {
+      "source": "/var/lib/docker/plugins/",
+      "destination": "/csi",
+      "type": "bind",
+      "options": ["rbind", "rshared"]
+    },
+    {
+      "source": "/var/lib/kubelet/",
+      "destination": "/var/lib/kubelet/",
+      "type": "bind",
+      "options": ["rbind", "rshared", "rw"]
+    },
+    {
+      "source": "/dev",
+      "destination": "/dev",
+      "type": "bind",
+      "options": ["rbind", "rshared", "rw"]
+    }
+  ],
+  "linux": {
+    "capabilities": ["CAP_SYS_ADMIN"],
+    "allowAllDevices": true
+  },
+  "propagatedMount": "/var/lib/kubelet/",
+  "env": [
+    {
+      "name": "CSI_ENDPOINT",
+      "description": "CSI gRPC endpoint",
+      "value": "unix:///csi/csi.sock",
+      "settable": ["value"]
+    },
+    {
+      "name": "MANAGER_URL",
+      "description": "Volume Manager REST API URL",
+      "value": "http://volume-manager:9789",
+      "settable": ["value"]
+    },
+    {
+      "name": "LOG_LEVEL",
+      "description": "Log level (debug, info, warn, error)",
+      "value": "info",
+      "settable": ["value"]
+    }
+  ]
+}

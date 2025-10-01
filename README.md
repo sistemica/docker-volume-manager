@@ -95,6 +95,59 @@ docker service create \
   nginx:latest
 ```
 
+### Building the CSI Plugin
+
+To build the Docker managed CSI plugin from source:
+
+```bash
+# Build the plugin
+make plugin-build
+
+# Enable the plugin
+make plugin-enable
+
+# Configure plugin settings (optional)
+docker plugin set sistemica/docker-volume-manager-csi:latest \
+  MANAGER_URL=http://volume-manager:9789
+
+# Verify plugin is enabled
+docker plugin ls
+```
+
+### CSI Plugin Architecture
+
+The CSI plugin communicates with the Volume Manager via REST API:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    Docker Engine                          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │           CSI Plugin (Data Plane)                  │  │
+│  │  • Identity Service (plugin info)                  │  │
+│  │  • Controller Service (volume lifecycle)           │  │
+│  │  • Node Service (mount/unmount operations)         │  │
+│  └────────────────┬───────────────────────────────────┘  │
+└───────────────────┼───────────────────────────────────────┘
+                    │ HTTP REST API
+┌───────────────────▼───────────────────────────────────────┐
+│              Volume Manager (Control Plane)               │
+│  • REST API for volume management                         │
+│  • Embedded etcd for distributed metadata                 │
+│  • Pluggable storage backends                             │
+└────────────────────────────────────────────────────────────┘
+```
+
+**CSI Operations:**
+- **Identity Service**: Plugin capabilities and health checks
+- **Controller Service**: Volume create, delete, list operations
+- **Node Service**: Stage, unstage, publish, unpublish (mount/unmount)
+
+**Communication Flow:**
+1. Docker calls CSI plugin via gRPC (Unix socket)
+2. CSI plugin translates requests to HTTP calls
+3. Volume Manager REST API handles actual operations
+4. Backend performs filesystem operations
+
 ## Storage Backends
 
 ### Current Backends
@@ -207,19 +260,28 @@ docker-volume-manager/
 ├── cmd/
 │   ├── volume-manager/      # Control plane service
 │   │   └── main.go
-│   ├── csi-plugin/          # CSI driver plugin (future)
+│   ├── csi-plugin/          # CSI driver plugin
+│   │   └── main.go
 │   └── vmctl/               # CLI tool (future)
 ├── pkg/
 │   ├── api/                 # HTTP API layer
 │   │   ├── server.go
 │   │   ├── handlers/
 │   │   │   ├── volumes.go
+│   │   │   ├── files.go     # RESTful file operations
 │   │   │   ├── backends.go
 │   │   │   └── health.go
 │   │   └── middleware/
 │   │       ├── logger.go
 │   │       ├── recovery.go
 │   │       └── cors.go
+│   ├── driver/              # CSI driver implementation
+│   │   ├── csi/
+│   │   │   ├── identity.go  # CSI Identity service
+│   │   │   ├── controller.go # CSI Controller service
+│   │   │   └── node.go      # CSI Node service
+│   │   └── client/
+│   │       └── client.go    # Volume Manager HTTP client
 │   ├── storage/             # Storage backend interface
 │   │   ├── backend.go       # Interface definition
 │   │   ├── registry.go      # Backend registry
@@ -228,12 +290,16 @@ docker-volume-manager/
 │   │   └── mock/            # Mock for testing
 │   ├── store/               # Metadata store (etcd)
 │   │   ├── store.go         # Store interface
-│   │   ├── etcd.go          # Embedded etcd (future)
+│   │   ├── etcd.go          # Embedded etcd
 │   │   └── memory.go        # In-memory (development)
 │   ├── config/              # Configuration
 │   │   └── config.go
 │   └── types/               # Shared types
 │       └── types.go
+├── plugin/                  # Docker managed plugin
+│   ├── config.json          # Plugin configuration
+│   ├── Dockerfile           # Plugin build
+│   └── build-plugin.sh      # Plugin build script
 ├── deploy/
 │   ├── swarm-stack.yml      # Production deployment
 │   └── docker-compose.yml   # Local development
@@ -332,12 +398,13 @@ make lint
 - [x] Structured logging (slog)
 - [x] Configuration with .env
 
-### Phase 2: CSI Driver (In Progress)
-- [ ] CSI gRPC service implementation
-- [ ] Docker managed plugin packaging
-- [ ] Integration with embedded etcd
-- [ ] Swarm cluster volume support
-- [ ] End-to-end testing
+### Phase 2: CSI Driver ✅ COMPLETE
+- [x] CSI gRPC service implementation (Identity, Controller, Node)
+- [x] Docker managed plugin packaging
+- [x] Integration with Volume Manager REST API
+- [x] HTTP client for Volume Manager communication
+- [ ] End-to-end testing with Docker Swarm
+- [ ] Multi-node cluster testing
 
 ### Phase 3: Advanced Backends
 - [ ] Zip archive backend
