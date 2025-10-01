@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:blog.gopheracademy.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.docker.com)",
+      "WebFetch(domain:www.mirantis.com)",
+      "WebFetch(domain:kubernetes-csi.github.io)",
+      "Bash(go mod init:*)",
+      "Bash(go get:*)",
+      "Bash(go mod:*)",
+      "Bash(go build:*)",
+      "Bash(VID=\"a45eea51-de9d-4c58-a920-3fb97bd0fdc0\")",
+      "Bash(curl -s -X POST \"http://localhost:9789/api/v1/volumes/$VID/files\" -H \"Content-Type: application/json\" -d '{\"\"path\"\":\"\"/data/config.json\"\",\"\"content\"\":\"\"{\\\"\"app\\\"\":\\\"\"test\\\"\"}\"\"}')",
+      "Read(//private/tmp/test-volume/**)",
+      "Read(//tmp/test-volume/**)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Read(//private/tmp/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
