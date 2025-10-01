@@ -43,3 +43,4 @@ coverage.html
 
 # Test scripts
 test-api.sh
+plugin/rootfs/

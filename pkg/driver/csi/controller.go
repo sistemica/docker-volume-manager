@@ -2,6 +2,7 @@ package csi
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -42,7 +43,14 @@ func (s *ControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolu
 		backend = "local" // Default to local backend
 	}
 
-	s.logger.Info("creating volume", "name", volumeName, "backend", backend)
+	// For local backend, generate path if not provided
+	if backend == "local" {
+		if _, ok := parameters["path"]; !ok {
+			parameters["path"] = fmt.Sprintf("/mnt/volumes/%s", volumeName)
+		}
+	}
+
+	s.logger.Info("creating volume", "name", volumeName, "backend", backend, "parameters", parameters)
 
 	// Call Volume Manager to create the volume
 	volume, err := s.client.CreateVolume(ctx, volumeName, backend, parameters)
@@ -52,6 +60,7 @@ func (s *ControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolu
 
 	s.logger.Info("volume created", "volume_id", volume.ID, "name", volumeName)
 
+	// For local filesystem, don't specify topology - volume is accessible from any node
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			VolumeId:      volume.ID,

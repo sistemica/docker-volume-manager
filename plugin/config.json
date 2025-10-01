@@ -2,7 +2,7 @@
   "description": "Sistemica Docker Volume Manager CSI Plugin",
   "documentation": "https://github.com/sistemica/docker-volume-manager",
   "interface": {
-    "types": ["docker.volumedriver/1.0"],
+    "types": ["docker.csicontroller/1.0", "docker.csinode/1.0"],
     "socket": "csi.sock"
   },
   "entrypoint": ["/csi-plugin"],
@@ -12,20 +12,8 @@
   },
   "mounts": [
     {
-      "source": "/var/lib/docker/plugins/",
-      "destination": "/csi",
-      "type": "bind",
-      "options": ["rbind", "rshared"]
-    },
-    {
-      "source": "/var/lib/kubelet/",
-      "destination": "/var/lib/kubelet/",
-      "type": "bind",
-      "options": ["rbind", "rshared", "rw"]
-    },
-    {
-      "source": "/dev",
-      "destination": "/dev",
+      "source": "/tmp",
+      "destination": "/mnt/volumes",
       "type": "bind",
       "options": ["rbind", "rshared", "rw"]
     }
@@ -34,12 +22,11 @@
     "capabilities": ["CAP_SYS_ADMIN"],
     "allowAllDevices": true
   },
-  "propagatedMount": "/var/lib/kubelet/",
   "env": [
     {
       "name": "CSI_ENDPOINT",
       "description": "CSI gRPC endpoint",
-      "value": "unix:///csi/csi.sock",
+      "value": "unix:///run/docker/plugins/csi.sock",
       "settable": ["value"]
     },
     {

@@ -31,14 +31,18 @@ func NewVolumeHandler(store store.Store, logger *slog.Logger) *VolumeHandler {
 func (h *VolumeHandler) HandleCreate(c echo.Context) error {
 	var req types.CreateVolumeRequest
 	if err := c.Bind(&req); err != nil {
+		h.logger.Error("failed to bind request", "error", err)
 		return c.JSON(http.StatusBadRequest, types.ErrorResponse{
 			Error:   "invalid_request",
 			Message: "Invalid request body",
 		})
 	}
 
+	h.logger.Debug("create volume request", "name", req.Name, "backend", req.Backend, "parameters", req.Parameters)
+
 	// Validate request
 	if req.Name == "" {
+		h.logger.Error("validation failed: volume name is empty")
 		return c.JSON(http.StatusBadRequest, types.ErrorResponse{
 			Error:   "validation_error",
 			Message: "Volume name is required",
@@ -46,6 +50,7 @@ func (h *VolumeHandler) HandleCreate(c echo.Context) error {
 	}
 
 	if req.Backend == "" {
+		h.logger.Error("validation failed: backend is empty", "name", req.Name)
 		return c.JSON(http.StatusBadRequest, types.ErrorResponse{
 			Error:   "validation_error",
 			Message: "Backend is required",

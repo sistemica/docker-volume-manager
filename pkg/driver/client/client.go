@@ -121,12 +121,15 @@ func (c *VolumeManagerClient) ListVolumes(ctx context.Context) ([]*types.Volume,
 		return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var volumes []*types.Volume
-	if err := json.NewDecoder(resp.Body).Decode(&volumes); err != nil {
+	var response struct {
+		Count   int              `json:"count"`
+		Volumes []*types.Volume `json:"volumes"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return volumes, nil
+	return response.Volumes, nil
 }
 
 // DeleteVolume deletes a volume
@@ -147,7 +150,7 @@ func (c *VolumeManagerClient) DeleteVolume(ctx context.Context, volumeID string)
 		return fmt.Errorf("volume not found")
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 	}
